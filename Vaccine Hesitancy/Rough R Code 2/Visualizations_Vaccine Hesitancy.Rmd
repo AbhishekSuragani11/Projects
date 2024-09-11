@@ -1,0 +1,263 @@
+---
+title: "VH_Visualization"
+author: "Abhishek Suragani"
+date: "01/12/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(reshape2)
+```
+
+
+Quantitative: Use a histogram
+
+- Categorical: Use a bar chart. Or just a table of *proportions* (`table()` then `prop.table()`).
+
+
+- Quantitative vs Quantitative: Use a scatterplot
+
+- Categorical vs Quantitative: Use a boxplot
+
+- Categorical vs Categorical: Use a mosaic plot or a count plot
+
+```{r}
+df3%>%
+  select(Estimated.hesitant,
+         SVI, CVAC.level.of.concern.for.vaccination.rollout, Percent.Hispanic,Percent.non.Hispanic.American.Indian.Alaska.Native,
+      Percent.non.Hispanic.Black, 
+         Percent.non.Hispanic.Native.Hawaiian.Pacific.Islander,
+         Percent.non.Hispanic.White,Median_Household_Income_2019, 
+         Obesity_Percent, unemployment_rate,party_DEMOCRAT,
+         party_REPUBLICAN) -> df5
+
+df5 %>%
+  rename(df5,CVAC.level.of.concern.for.vaccination.rollout = CVAC) -> df6
+
+rename(df5, CVAC.level.of.concern.for.vaccination.rollout = CVAC)
+
+names(df5)[3] <- 'CVAC'
+
+names(df5)[4] <- 'Hispanic'
+
+names(df5)[5] <- 'American.Indian'
+
+names(df5)[6] <- 'Black'
+
+names(df5)[7] <- 'Pacific Islander'
+
+names(df5)[8] <- 'White'
+
+names(df5)[9] <- 'Median Income'
+
+names(df5)[10] <- 'Obesity %'
+
+names(df5)[11] <- 'Unemployment Rate'
+
+names(df5)[12] <- 'Democrat'
+
+str(df5)
+```
+
+
+```{r}
+corrplot(df5, method = "circle")
+```
+
+
+
+#1. #Based on regions what is the proportion of people that are vaccine hesitant ?
+
+
+
+```{r}
+df3 <- read.csv("df3.csv")
+
+df3 <- as.data.frame(df3)
+
+df3%>%
+  group_by(Region)%>%
+  summarise(Average_Estimated.hesitant = mean(Estimated.hesitant))%>%
+  ggplot(aes(x = Region, y = Average_Estimated.hesitant)) + 
+  geom_col(aes(fill = Region)) + theme_bw() +
+  labs( x = "Region", y = "Average Vaccine Hesitancy Rate", 
+        title = "Region vs Average Vaccine Hesitancy Rate") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+
+```
+
+#2. SVI Category vs estimated Hesitant
+
+```{r}
+#boxplot -
+
+#df3 %>%mutate(SVI.Category = as.factor(SVI.Category, levels = c("Very Low Concern", "Low Concern", "Moderate Concern", "High Concern", "Very High Concern")) %>%
+      
+ggplot(df3, aes(x = SVI.Category, y = Estimated.hesitant, fill = SVI.Category)) + 
+  geom_boxplot() + theme_bw() +
+  labs( x = "SVI Category", y = "Vaccine Hesitancy", 
+        title = "SVI Category vs Vaccine Hesitancy") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position = "bottom")
+  
+# we can add region but it seems hard to explain 
+```
+
+#Estimated Hesitancy with Diabetes (Quant vs Quant)
+
+```{r}
+ggplot(df3, aes( x = Diabetes_Percent, 
+                 y = Estimated.hesitant, color = Diabetes_Percent > 10)) + geom_point() + geom_smooth(fill = NA, method = lm) + expand_limits(y=0) +
+  theme_bw() +
+  labs( x = "Diabetes(%)", y = "Vaccine Hesitancy",
+        title = "Diabetes(%) vs Vaccine Hesitancy")+
+  theme(legend.position = "bottom")+
+   theme(plot.title = element_text(hjust = 0.5)) 
+
+#Given a condition as it will help while explaining project that Diabetes Percent is directly proportiinal to Estimated Hesitancy 
+```
+
+#Estimated Hesitant based on Party
+
+```{r}
+df3 %>%
+  rename(Republican = "party_REPUBLICAN", 
+         Democratic = "party_DEMOCRAT" ) %>%
+  pivot_longer(c(Democratic, Republican), names_to = "Party", values_to = "Majority") -> df9
+colnames(df3)
+
+ggplot(df9, aes(x= Party, y = Majority, color = Party)) + 
+  geom_col() + facet_wrap(~ Estimated.hesitant) +
+  theme_bw() +
+  labs( x = "Party", y = "Majority", 
+        title = "Vaccine Hesitancy vs Party") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position = "bottom")
+
+
+```
+
+
+# Estimated hesitancy based on Race
+
+```{r}
+  df3 %>% 
+    rename(Hispanic = "Percent.Hispanic",
+           American_Indian_Alaska_Native = "Percent.non.Hispanic.American.Indian.Alaska.Native",
+           Asian = "Percent.non.Hispanic.Asian",
+           Black = "Percent.non.Hispanic.Black",
+           Hawaiian_Pacific_Islander = "Percent.non.Hispanic.Native.Hawaiian.Pacific.Islander", 
+           White = "Percent.non.Hispanic.White") %>%
+    pivot_longer(c(Hispanic,American_Indian_Alaska_Native,
+                   Asian, Black, Hawaiian_Pacific_Islander, White), 
+                 names_to = "Race",values_to = "Percent") -> df7
+```
+
+```{r}
+
+df11 <- plyr::rename(df7, c("Estimated.hesitant" = "Vaccine Hesitancy"))    # rename() function of plyr
+                               
+
+ggplot(df7,aes(x = Percent, y = Estimated.hesitant)) +
+  geom_point(aes(color = Race)) + 
+  facet_wrap(~ Race) +
+  theme_bw() + 
+  labs( x = "Race", y = "Vaccine Hesitancy Rate",
+        title = "Race vs Vaccine Hesitancy") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position = "bottom") 
+  
+
+
+#tried geom col not getting good visualization  
+```
+
+
+
+
+
+```{r}
+
+#labs not working , tried renaming still does not work
+ggplot(df11, aes(x = Percent, 
+                 y = "Vaccine Hesitancy")) +
+  geom_point(aes(color = Race)) + 
+  facet_wrap(~ Race)
+theme_bw() + labs( x = "Race", 
+                   y = "Vaccine Hesitancy Rate", 
+                   title = "Race vs Vaccine Hesitancy") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position = "bottom") 
+
+
+  
+```
+
+
+# Estimated Hesitant vs Unemployment Rate 
+
+```{r}
+
+ggplot(df3, 
+       aes(x = unemployment_rate, 
+           y = Estimated.hesitant)) +  
+  geom_jitter(color="cornflowerblue", 
+             size = 2,
+             alpha = 0.5) +
+  geom_smooth(size = 1.5,
+              color = "darkgrey", fill = NA) +
+  scale_x_log10() + 
+  theme_bw() +
+  labs( x = "Unemployment rate",
+        y = "Vaccine hesitancy") +
+  ggtitle( "Unemployment Rate vs Vaccine Hesitancy") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+#Estimated hesitant vs Obesity Rate
+
+```{r}
+ggplot(df3, 
+       aes(x = Obesity_Percent, 
+           y = Estimated.hesitant)) +
+  geom_point(color= "steelblue") +
+  geom_smooth(color = "tomato", fill = NA, method = lm) +
+  theme_bw() + 
+  labs( x = "Obesity (%)",
+        y = "Vaccine hesitancy") +
+  ggtitle("Obesity (%) vs Vaccine Hesitancy") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+ggsave("Obesityvs Vaccine Hesitancy.png")
+
+```
+
+# Estimated Hesitancy considering Median Household Income 
+
+```{r}
+
+ggplot(df3, 
+       aes(x = Median_Household_Income_2019 , 
+           y = Estimated.hesitant)) +
+  geom_point(color = "#00AFBB") +
+  geom_smooth(color = "tomato", fill = NA, method = lm) +
+  scale_x_log10() + 
+  scale_x_continuous(label = scales::dollar, 
+                     limits = c(10000, 250000)) +
+  theme_bw()+
+  labs( x = "Household Income",
+        y = "Vaccine hesitancy") +
+  ggtitle("Household Income vs Vaccine Hesitancy") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+#theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+ggsave("Household Income vs Vaccine Hesitancy.png")
+
+```
+
